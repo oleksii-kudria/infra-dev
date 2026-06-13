@@ -1,0 +1,25 @@
+---
+- name: Install GitLab Runner
+  ansible.builtin.debug:
+    msg: "TODO: Add the GitLab Runner repository and install the package."
+  changed_when: false
+
+- name: Add GitLab Runner user to the Docker group
+  ansible.builtin.debug:
+    msg: "TODO: Add the GitLab Runner service account to the Docker group."
+  changed_when: false
+
+- name: Register GitLab Runner
+  ansible.builtin.debug:
+    msg: >-
+      TODO: Register {{ gitlab_runner_description }} with {{ gitlab_url }}
+      using the {{ gitlab_runner_executor }} executor and
+      {{ gitlab_runner_default_image }} as its default image.
+  changed_when: false
+  no_log: true
+  notify: Restart GitLab Runner
+
+- name: Ensure GitLab Runner service restart is handled
+  ansible.builtin.debug:
+    msg: "TODO: Notify the restart handler when Runner configuration changes."
+  changed_when: false

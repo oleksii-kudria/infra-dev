@@ -1,0 +1,11 @@
+---
+gitlab_url: "{{ lookup('env', 'GITLAB_URL') | default('https://gitlab.com/', true) }}"
+gitlab_runner_token: "{{ lookup('env', 'GITLAB_RUNNER_TOKEN') }}"
+gitlab_runner_description: >-
+  {{ lookup('env', 'GITLAB_RUNNER_DESCRIPTION')
+     | default('product-catalog-dev-runner', true) }}
+gitlab_runner_executor: >-
+  {{ lookup('env', 'GITLAB_RUNNER_EXECUTOR') | default('docker', true) }}
+gitlab_runner_default_image: >-
+  {{ lookup('env', 'GITLAB_RUNNER_DEFAULT_IMAGE')
+     | default('docker:27-cli', true) }}

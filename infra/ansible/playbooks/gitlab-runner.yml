@@ -1,0 +1,22 @@
+---
+- name: Configure GitLab Runner
+  hosts: dev
+  gather_facts: false
+  become: true
+
+  pre_tasks:
+    - name: Validate required environment variables
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'DEV_SERVER_IP') | length > 0
+          - gitlab_runner_token | length > 0
+        fail_msg: >-
+          DEV_SERVER_IP and GITLAB_RUNNER_TOKEN environment variables are
+          required.
+        success_msg: Required environment variables are configured.
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+  roles:
+    - role: gitlab_runner

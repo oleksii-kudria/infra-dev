@@ -1,0 +1,9 @@
+---
+all:
+  children:
+    dev:
+      hosts:
+        product-catalog-dev:
+          ansible_host: "{{ lookup('env', 'DEV_SERVER_IP') }}"
+          ansible_user: >-
+            {{ lookup('env', 'ANSIBLE_USER') | default('admin', true) }}
