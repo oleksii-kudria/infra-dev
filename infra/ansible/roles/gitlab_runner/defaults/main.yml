@@ -1,0 +1,9 @@
+---
+# Non-secret defaults shared by all environments.
+gitlab_url: https://gitlab.com/
+gitlab_runner_description: gitlab-runner
+gitlab_runner_executor: docker
+gitlab_runner_default_image: docker:27-cli
+
+# Deliberately empty: group_vars reads this secret from GITLAB_RUNNER_TOKEN.
+gitlab_runner_token: ""
