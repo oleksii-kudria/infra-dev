@@ -88,6 +88,18 @@ command above.
 
 ## Verification and troubleshooting
 
+After the playbook completes, connect to the server and verify the installation,
+service, GitLab registration, and Docker access:
+
+```bash
+ssh <SSH_USER>@<SERVER_IP>
+
+gitlab-runner --version
+systemctl status gitlab-runner
+sudo gitlab-runner verify
+sudo -u gitlab-runner docker ps
+```
+
 Confirm that the runner token is set in the current shell:
 
 ```bash
@@ -109,9 +121,9 @@ ansible-playbook \
   playbooks/gitlab-runner.yml
 ```
 
-If Ansible does not use the repository configuration, prefix verification
-commands with `ANSIBLE_CONFIG=./ansible.cfg`. To preview changes once the role
-has real implementation tasks, add `--check --diff` to the deployment command.
+If Ansible does not use the repository configuration, prefix local Ansible
+commands with `ANSIBLE_CONFIG=./ansible.cfg`. To preview changes, add
+`--check --diff` to the deployment command.
 
 ## Security notes
 

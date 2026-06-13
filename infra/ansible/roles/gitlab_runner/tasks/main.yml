@@ -1,25 +1,110 @@
 ---
+- name: Validate GitLab Runner token
+  ansible.builtin.assert:
+    that:
+      - gitlab_runner_token is defined
+      - gitlab_runner_token | string | length > 0
+    fail_msg: GITLAB_RUNNER_TOKEN or gitlab_runner_token must be provided
+  no_log: true
+
+- name: Install GitLab Runner repository dependencies
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Add official GitLab Runner repository
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh |
+      bash
+    executable: /bin/bash
+    creates: /etc/apt/sources.list.d/runner_gitlab-runner.list
+
 - name: Install GitLab Runner
-  ansible.builtin.debug:
-    msg: "TODO: Add the GitLab Runner repository and install the package."
-  changed_when: false
+  ansible.builtin.apt:
+    name: gitlab-runner
+    state: present
+    update_cache: true
 
 - name: Add GitLab Runner user to the Docker group
-  ansible.builtin.debug:
-    msg: "TODO: Add the GitLab Runner service account to the Docker group."
-  changed_when: false
+  ansible.builtin.user:
+    name: gitlab-runner
+    groups:
+      - docker
+    append: true
+  notify: Restart GitLab Runner
+
+- name: Check for an existing GitLab Runner configuration
+  ansible.builtin.stat:
+    path: /etc/gitlab-runner/config.toml
+  register: gitlab_runner_config
+
+- name: Read the existing GitLab Runner configuration
+  ansible.builtin.slurp:
+    path: /etc/gitlab-runner/config.toml
+  register: gitlab_runner_config_contents
+  when: gitlab_runner_config.stat.exists
+  no_log: true
+
+- name: Determine whether the runner is already registered
+  ansible.builtin.set_fact:
+    gitlab_runner_is_registered: >-
+      {{
+        gitlab_runner_config.stat.exists
+        and gitlab_runner_description
+        in (gitlab_runner_config_contents.content | default('') | b64decode)
+      }}
+  no_log: true
 
 - name: Register GitLab Runner
-  ansible.builtin.debug:
-    msg: >-
-      TODO: Register {{ gitlab_runner_description }} with {{ gitlab_url }}
-      using the {{ gitlab_runner_executor }} executor and
-      {{ gitlab_runner_default_image }} as its default image.
-  changed_when: false
+  ansible.builtin.command:
+    argv:
+      - gitlab-runner
+      - register
+      - --non-interactive
+      - --url
+      - "{{ gitlab_url }}"
+      - --token
+      - "{{ gitlab_runner_token }}"
+      - --executor
+      - "{{ gitlab_runner_executor }}"
+      - --docker-image
+      - "{{ gitlab_runner_default_image }}"
+      - --description
+      - "{{ gitlab_runner_description }}"
+  when: not gitlab_runner_is_registered
   no_log: true
   notify: Restart GitLab Runner
 
-- name: Ensure GitLab Runner service restart is handled
-  ansible.builtin.debug:
-    msg: "TODO: Notify the restart handler when Runner configuration changes."
+- name: Ensure GitLab Runner service is enabled and running
+  ansible.builtin.service:
+    name: gitlab-runner
+    enabled: true
+    state: started
+
+- name: Apply pending GitLab Runner service restart
+  ansible.builtin.meta: flush_handlers
+
+- name: Check GitLab Runner version
+  ansible.builtin.command:
+    argv:
+      - gitlab-runner
+      - --version
+  register: gitlab_runner_version
   changed_when: false
+
+- name: Verify registered GitLab Runners
+  ansible.builtin.command:
+    argv:
+      - gitlab-runner
+      - verify
+  register: gitlab_runner_verify
+  changed_when: false
+  no_log: true

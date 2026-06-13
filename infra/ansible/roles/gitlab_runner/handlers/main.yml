@@ -1,4 +1,6 @@
 ---
 - name: Restart GitLab Runner
-  ansible.builtin.debug:
-    msg: "TODO: Restart and enable the GitLab Runner service."
+  ansible.builtin.service:
+    name: gitlab-runner
+    enabled: true
+    state: restarted
