@@ -47,61 +47,79 @@ CI deployment, generated inventory, or Terraform-to-Ansible integration.
 Install Ansible locally and ensure the workstation can connect to the
 development server over SSH.
 
-### Configure GitLab Runner token
-
-Export the GitLab Runner token before execution:
+Run the commands from `infra/ansible`. Export the runner authentication token,
+then pass the token and target SSH connection details as runtime variables:
 
 ```bash
 export GITLAB_RUNNER_TOKEN="glrt-xxxxxxxx"
+
+ANSIBLE_CONFIG=./ansible.cfg \
+ansible-playbook \
+  -i inventory/dev.yml \
+  playbooks/gitlab-runner.yml \
+  -e gitlab_runner_token="$GITLAB_RUNNER_TOKEN" \
+  -e ansible_host=<SERVER_IP> \
+  -e ansible_user=<SSH_USER>
 ```
 
-The playbook validates this value before running the GitLab Runner role and
-exits with a clear error if it is missing.
+Replace `<SERVER_IP>` and `<SSH_USER>` with the target server's address and SSH
+account. The playbook validates the token before running the GitLab Runner role
+and exits with a clear error if it is missing.
 
-### Verify inventory
+| Parameter | Description |
+| --- | --- |
+| `GITLAB_RUNNER_TOKEN` | GitLab Runner authentication token generated in GitLab |
+| `ansible_host` | Target server IP address |
+| `ansible_user` | SSH user used to connect to the server |
+| `ANSIBLE_CONFIG` | Explicit path to `ansible.cfg` |
 
-Edit:
+### WSL and `ansible.cfg`
+
+When running Ansible from WSL with the repository stored under `/mnt/c/...`,
+Ansible may display this warning:
 
 ```text
-inventory/dev.yml
+Ansible is being run in a world writable directory
 ```
 
-Replace `SERVER_IP` with the actual server address. Update `ansible_user` in
-that file if the server's SSH administrator account is not `admin`.
+In this situation, Ansible may not automatically load the project configuration.
+Specify `ANSIBLE_CONFIG=./ansible.cfg` explicitly, as shown in the deployment
+command above.
 
-### Run playbook
+## Verification and troubleshooting
+
+Confirm that the runner token is set in the current shell:
 
 ```bash
-cd infra/ansible
+echo $GITLAB_RUNNER_TOKEN
+```
 
+Inspect the resolved development inventory:
+
+```bash
+ansible-inventory -i inventory/dev.yml --list
+```
+
+Check the playbook syntax before deployment:
+
+```bash
 ansible-playbook \
+  --syntax-check \
   -i inventory/dev.yml \
   playbooks/gitlab-runner.yml
 ```
 
-## Running a playbook
+If Ansible does not use the repository configuration, prefix verification
+commands with `ANSIBLE_CONFIG=./ansible.cfg`. To preview changes once the role
+has real implementation tasks, add `--check --diff` to the deployment command.
 
-Run commands from this directory so that Ansible automatically loads
-`ansible.cfg`:
+## Security notes
 
-```bash
-cd infra/ansible
-ansible-playbook --syntax-check -i inventory/dev.yml playbooks/gitlab-runner.yml
-ansible-playbook -i inventory/dev.yml playbooks/gitlab-runner.yml
-```
+- GitLab Runner tokens must never be committed to Git.
+- Do not store real tokens or other secret values in inventory files.
+- Do not store real tokens or other secret values in `group_vars` files.
+- Provide tokens through environment variables during execution.
 
-To preview changes once the role has real implementation tasks, use check mode:
-
-```bash
-ansible-playbook --check --diff -i inventory/dev.yml playbooks/gitlab-runner.yml
-```
-
-The development inventory is configured by default. An explicit inventory can
-be selected with `-i inventory/<environment>.yml`.
-
-## Secrets
-
-Never commit registration tokens, passwords, private keys, or other
-credentials. The GitLab Runner token is the only secret read from an environment
-variable. Be aware that exported values may be retained in shell history. Tasks
-that consume secrets should use `no_log: true`.
+Also never commit passwords, private keys, or other credentials. Be aware that
+exported values may be retained in shell history. Tasks that consume secrets
+should use `no_log: true`.
