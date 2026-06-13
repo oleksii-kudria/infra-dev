@@ -1,3 +1,0 @@
-infra/ansible/.env
-infra/ansible/.env.*
-!infra/ansible/.env.example

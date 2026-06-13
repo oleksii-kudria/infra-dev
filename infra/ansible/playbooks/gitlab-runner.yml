@@ -5,15 +5,12 @@
   become: true
 
   pre_tasks:
-    - name: Validate required environment variables
+    - name: Validate GitLab Runner token
       ansible.builtin.assert:
         that:
-          - lookup('env', 'DEV_SERVER_IP') | length > 0
+          - gitlab_runner_token is defined
           - gitlab_runner_token | length > 0
-        fail_msg: >-
-          DEV_SERVER_IP and GITLAB_RUNNER_TOKEN environment variables are
-          required.
-        success_msg: Required environment variables are configured.
+        fail_msg: Environment variable GITLAB_RUNNER_TOKEN is required
       delegate_to: localhost
       become: false
       run_once: true
