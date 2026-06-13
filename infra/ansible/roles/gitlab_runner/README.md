@@ -1,15 +1,16 @@
 # GitLab Runner role
 
-This role will install, register, and manage GitLab Runner on Ubuntu 24.04
-hosts. The current tasks and handler are safe placeholders that define the
-intended workflow without changing a target host.
+This role installs, registers, and manages GitLab Runner on Ubuntu 24.04 hosts.
 
-## Planned responsibilities
+## Responsibilities
 
 1. Add the official GitLab Runner package repository and install the runner.
-2. Install or validate Docker and grant the runner account Docker access.
-3. Register the runner idempotently with the configured GitLab instance.
-4. Restart and enable the GitLab Runner service when its configuration changes.
+2. Grant the runner service account access to an existing Docker installation.
+3. Register the Docker executor unless a runner with the configured description
+   already exists in `/etc/gitlab-runner/config.toml`.
+4. Restart and enable the GitLab Runner service when its configuration or group
+   membership changes.
+5. Verify the installed binary and registered runner.
 
 ## Variables
 
@@ -25,8 +26,6 @@ The development environment currently supplies:
 - `gitlab_runner_default_image`
 - `gitlab_runner_token` (read from the local environment)
 
-## Extending the role
-
-Put generated configuration files in `templates/` and static payloads in
-`files/`. Tasks should remain idempotent, use fully qualified collection names,
-avoid logging secrets, and notify handlers only when a managed resource changes.
+Docker and the `docker` group must exist before this role runs. Registration
+commands and configuration inspection use `no_log: true` so authentication
+tokens stored by GitLab Runner are not exposed in Ansible output.
