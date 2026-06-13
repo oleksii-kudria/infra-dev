@@ -23,7 +23,7 @@ The development environment currently supplies:
 - `gitlab_runner_description`
 - `gitlab_runner_executor`
 - `gitlab_runner_default_image`
-- `gitlab_runner_token` (placeholder only)
+- `gitlab_runner_token` (read from the local environment)
 
 ## Extending the role
 
