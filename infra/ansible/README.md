@@ -128,11 +128,6 @@ For the default placeholder, these resolve to:
 - `catalog-api.example.com`
 - `catalog-grafana.example.com`
 
-Do not configure public domains for `catalog-collector.<base_domain>` or
-`catalog-writer.<base_domain>`. The collector and writer are intentionally not
-configured as public Nginx virtual hosts; they are internal services only and
-must remain reachable only through private/local network paths.
-
 The `nginx` role installs Nginx, removes the default virtual host, creates one
 configuration in `/etc/nginx/sites-available/` for each `nginx_sites` entry,
 enables each site with a symlink in `/etc/nginx/sites-enabled/`, validates the
