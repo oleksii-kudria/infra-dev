@@ -29,3 +29,13 @@ The development environment currently supplies:
 Docker and the `docker` group must exist before this role runs. Registration
 commands and configuration inspection use `no_log: true` so authentication
 tokens stored by GitLab Runner are not exposed in Ansible output.
+
+## Required configuration before deployment
+
+Before running the top-level Ansible playbook, review the main Ansible README
+for the full pre-deployment checklist. At minimum, customize the inventory host
+address and SSH user in `inventory/dev.yml`, update environment variables in
+`group_vars/dev.yml`, replace example Nginx domains and the Certbot email, and
+provide `GITLAB_RUNNER_TOKEN` from the local shell or as an extra variable. The
+GitLab Runner role itself requires a valid `gitlab_runner_token`; the Nginx and
+Certbot variables are configured outside this role in environment group vars.

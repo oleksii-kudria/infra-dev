@@ -1,0 +1,74 @@
+---
+- name: Validate nginx site definitions
+  ansible.builtin.assert:
+    that:
+      - nginx_sites is defined
+      - nginx_sites | type_debug == 'list'
+      - item.name is defined
+      - item.server_name is defined
+      - item.upstream_host is defined
+      - item.upstream_port is defined
+    fail_msg: Each nginx_sites entry must define name, server_name, upstream_host, and upstream_port
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure nginx service is enabled and started
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Remove default nginx site from sites-enabled
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Validate and reload nginx
+
+- name: Remove default nginx site from sites-available
+  ansible.builtin.file:
+    path: /etc/nginx/sites-available/default
+    state: absent
+  notify: Validate and reload nginx
+
+- name: Create nginx virtual host configuration files
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ site.name }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    loop_var: site
+    label: "{{ site.name }}"
+  notify: Validate and reload nginx
+
+- name: Enable nginx virtual hosts
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}.conf"
+    state: link
+    owner: root
+    group: root
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Validate and reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command:
+    argv:
+      - nginx
+      - -t
+  changed_when: false
+
+- name: Apply pending nginx configuration changes
+  ansible.builtin.meta: flush_handlers
