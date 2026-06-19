@@ -15,8 +15,8 @@ ansible/
 ├── ansible.cfg              # Project-level Ansible configuration
 ├── inventory/               # Environment inventories
 │   └── dev.yml
-├── group_vars/              # Variables grouped by inventory group
-│   └── dev.yml
+│   └──group_vars/           # Variables grouped by inventory group
+│      └── dev.yml
 ├── playbooks/               # Service entry-point playbooks
 │   └── gitlab-runner.yml
 └── roles/                   # Reusable component automation
@@ -35,7 +35,7 @@ small: select hosts, set privilege escalation, and compose roles.
 Before running Ansible against a real server, review and customize these files:
 
 - `inventory/dev.yml`: contains the inventory hosts for the development environment. Replace the placeholder host address (`ansible_host`) with the target server IP or DNS name and update `ansible_user` if your SSH account is different.
-- `group_vars/dev.yml`: contains environment-wide variables for the `dev` group, including `base_domain`, `nginx_sites`, Certbot settings, and GitLab Runner defaults. Replace the placeholder `base_domain` value and the Certbot email address before first deployment.
+- `inventory/group_vars/dev.yml`: contains environment-wide variables for the `dev` group, including `base_domain`, `nginx_sites`, Certbot settings, and GitLab Runner defaults. Replace the placeholder `base_domain` value and the Certbot email address before first deployment.
 - Additional `group_vars/<environment>.yml` files: if you add another environment, create or update its group variables with the same required values instead of reusing development-specific settings.
 
 `nginx_sites` is intentionally an environment variable only. Do not set
@@ -62,7 +62,7 @@ These variables are usually safe to leave unchanged unless your services listen 
 - `certbot_redirect_http_to_https`: keep `true` to enforce HTTP-to-HTTPS redirects.
 - `gitlab_runner_executor` and `gitlab_runner_default_image`: keep these defaults unless you need a different runner executor or base image.
 
-Example `group_vars/dev.yml` values after customization:
+Example `inventory/group_vars/dev.yml` values after customization:
 
 ```yaml
 base_domain: example.com
@@ -84,7 +84,7 @@ certbot_email: admin@example.com
 ## Inventory and variables
 
 Inventories are organized by environment under `inventory/`. The `dev` group in
-`inventory/dev.yml` contains development hosts, while `group_vars/dev.yml`
+`inventory/dev.yml` contains development hosts, while `inventory/group_vars/dev.yml`
 provides variables for every host in that group.
 
 The development inventory contains a static host entry for the single
@@ -93,7 +93,7 @@ future environments rather than mixing environments.
 
 ### Nginx domains and upstreams
 
-Public Nginx reverse proxy sites are configured in `group_vars/dev.yml` with a
+Public Nginx reverse proxy sites are configured in `inventory/group_vars/dev.yml` with a
 single `base_domain` value plus `nginx_sites`. Before running Ansible, change
 only the placeholder base domain to your real domain:
 
@@ -142,7 +142,7 @@ configuration with `nginx -t`, and reloads Nginx only after validation succeeds.
 
 ### Certbot configuration
 
-Certbot settings are also defined in `group_vars/dev.yml`:
+Certbot settings are also defined in `inventory/group_vars/dev.yml`:
 
 ```yaml
 certbot_email: admin@example.com
