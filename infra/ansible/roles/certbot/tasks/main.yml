@@ -3,11 +3,19 @@
   ansible.builtin.assert:
     that:
       - nginx_sites is defined
+      - nginx_sites | type_debug == 'list'
       - nginx_sites | length > 0
       - certbot_email is defined
       - certbot_email | string | length > 0
       - certbot_agree_tos | bool
-    fail_msg: certbot_email and certbot_agree_tos=true are required, and nginx_sites must not be empty
+    fail_msg: >-
+      certbot_email and certbot_agree_tos=true are required, and nginx_sites
+      must be a non-empty list supplied by environment variables such as group_vars/dev.yml.
+    success_msg: "Certbot will request certificates for {{ nginx_sites | length }} nginx site(s)."
+
+- name: Show effective certbot certificate domains
+  ansible.builtin.debug:
+    msg: "Effective certificate domains: {{ nginx_sites | map(attribute='server_name') | list }}"
 
 - name: Install Certbot and nginx plugin
   ansible.builtin.apt:

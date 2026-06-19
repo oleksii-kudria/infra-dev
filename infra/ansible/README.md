@@ -38,6 +38,13 @@ Before running Ansible against a real server, review and customize these files:
 - `group_vars/dev.yml`: contains environment-wide variables for the `dev` group, including `base_domain`, `nginx_sites`, Certbot settings, and GitLab Runner defaults. Replace the placeholder `base_domain` value and the Certbot email address before first deployment.
 - Additional `group_vars/<environment>.yml` files: if you add another environment, create or update its group variables with the same required values instead of reusing development-specific settings.
 
+`nginx_sites` is intentionally an environment variable only. Do not set
+an empty `nginx_sites` value in role defaults, playbooks, or role vars: it can
+hide missing environment configuration and cause Nginx and Certbot site loops to
+skip. The GitLab Runner playbook and the Nginx and Certbot roles validate the
+effective value before making changes, and both roles consume the same
+`nginx_sites` list loaded from the selected inventory group variables.
+
 At minimum, change these variables before first deployment:
 
 - `base_domain`: replace `example.com` with the real base domain that points to the server. The public service hostnames are generated from this single value.

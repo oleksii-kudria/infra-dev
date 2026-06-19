@@ -15,6 +15,21 @@
       become: false
       run_once: true
 
+    - name: Validate effective nginx site inventory variables
+      ansible.builtin.assert:
+        that:
+          - nginx_sites is defined
+          - nginx_sites | type_debug == 'list'
+          - nginx_sites | length > 0
+        fail_msg: >-
+          nginx_sites must be defined as a non-empty list in environment group_vars,
+          for example group_vars/dev.yml, before running this playbook.
+        success_msg: "Loaded {{ nginx_sites | length }} nginx site definition(s) from inventory variables."
+
+    - name: Show effective nginx site names
+      ansible.builtin.debug:
+        msg: "Effective nginx_sites entries: {{ nginx_sites | map(attribute='name') | list }}"
+
   roles:
     - role: nginx
     - role: certbot

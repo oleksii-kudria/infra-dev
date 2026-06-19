@@ -1,2 +1,3 @@
 ---
-nginx_sites: []
+# nginx_sites is intentionally not defined here.
+# Define it in environment inventory variables, for example group_vars/dev.yml.
