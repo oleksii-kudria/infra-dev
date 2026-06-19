@@ -35,12 +35,12 @@ small: select hosts, set privilege escalation, and compose roles.
 Before running Ansible against a real server, review and customize these files:
 
 - `inventory/dev.yml`: contains the inventory hosts for the development environment. Replace the placeholder host address (`ansible_host`) with the target server IP or DNS name and update `ansible_user` if your SSH account is different.
-- `group_vars/dev.yml`: contains environment-wide variables for the `dev` group, including `nginx_sites`, Certbot settings, and GitLab Runner defaults. Replace example domain names and the Certbot email address before first deployment.
+- `group_vars/dev.yml`: contains environment-wide variables for the `dev` group, including `base_domain`, `nginx_sites`, Certbot settings, and GitLab Runner defaults. Replace the placeholder `base_domain` value and the Certbot email address before first deployment.
 - Additional `group_vars/<environment>.yml` files: if you add another environment, create or update its group variables with the same required values instead of reusing development-specific settings.
 
 At minimum, change these variables before first deployment:
 
-- `nginx_sites[*].server_name`: replace example hostnames with DNS names that point to the server.
+- `base_domain`: replace `example.com` with the real base domain that points to the server. The public service hostnames are generated from this single value.
 - `certbot_email`: replace `admin@example.com` with the administrator email for Let's Encrypt registration and renewal notices.
 - `ansible_host`: replace `SERVER_IP` in the inventory or provide the real address with `-e ansible_host=<SERVER_IP>`.
 - `ansible_user`: update the inventory value or provide `-e ansible_user=<SSH_USER>` if the SSH username is not `admin`.
@@ -58,14 +58,16 @@ These variables are usually safe to leave unchanged unless your services listen 
 Example `group_vars/dev.yml` values after customization:
 
 ```yaml
+base_domain: example.com
+
 nginx_sites:
   - name: catalog-api
-    server_name: catalog-api.example.com
+    server_name: "catalog-api.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 8082
 
   - name: catalog-grafana
-    server_name: catalog-grafana.example.com
+    server_name: "catalog-grafana.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 3000
 
@@ -84,32 +86,52 @@ future environments rather than mixing environments.
 
 ### Nginx domains and upstreams
 
-Public Nginx reverse proxy sites are configured in `group_vars/dev.yml` through
-`nginx_sites`. Each entry defines the public hostname and the local backend
-address that Nginx proxies to:
+Public Nginx reverse proxy sites are configured in `group_vars/dev.yml` with a
+single `base_domain` value plus `nginx_sites`. Before running Ansible, change
+only the placeholder base domain to your real domain:
 
 ```yaml
+base_domain: example.com
+```
+
+For example:
+
+```yaml
+base_domain: your-domain.example
+```
+
+Each `nginx_sites` entry derives its public hostname from `base_domain` and
+defines the local backend address that Nginx proxies to:
+
+```yaml
+base_domain: example.com
+
 nginx_sites:
   - name: catalog-api
-    server_name: catalog-api.example.com
+    server_name: "catalog-api.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 8082
 
   - name: catalog-grafana
-    server_name: catalog-grafana.example.com
+    server_name: "catalog-grafana.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 3000
 ```
 
-Only these public domains are configured:
+Only these public domain patterns are generated and configured:
+
+- `catalog-api.<base_domain>`
+- `catalog-grafana.<base_domain>`
+
+For the default placeholder, these resolve to:
 
 - `catalog-api.example.com`
 - `catalog-grafana.example.com`
 
-`catalog-collector.example.com` and `catalog-writer.example.com`
-are intentionally not configured as public Nginx virtual hosts. They are
-internal services only and must remain reachable only through private/local
-network paths.
+Do not configure public domains for `catalog-collector.<base_domain>` or
+`catalog-writer.<base_domain>`. The collector and writer are intentionally not
+configured as public Nginx virtual hosts; they are internal services only and
+must remain reachable only through private/local network paths.
 
 The `nginx` role installs Nginx, removes the default virtual host, creates one
 configuration in `/etc/nginx/sites-available/` for each `nginx_sites` entry,
@@ -143,7 +165,7 @@ CI deployment, generated inventory, or Terraform-to-Ansible integration.
 ### Prerequisites
 
 Install Ansible locally and ensure the workstation can connect to the
-development server over SSH. DNS for every `nginx_sites.server_name` value must
+development server over SSH. DNS for `catalog-api.<base_domain>` and `catalog-grafana.<base_domain>` must
 point at the target server before running Certbot, and Hetzner Firewall must
 allow TCP/80 and TCP/443.
 
@@ -220,7 +242,12 @@ sudo gitlab-runner verify
 sudo -u gitlab-runner docker ps
 ```
 
-The public HTTPS endpoints should be available at:
+The public HTTPS endpoints should be available at the generated public hostnames:
+
+- `https://catalog-api.<base_domain>`
+- `https://catalog-grafana.<base_domain>`
+
+With the default placeholder, these are:
 
 - `https://catalog-api.example.com`
 - `https://catalog-grafana.example.com`
