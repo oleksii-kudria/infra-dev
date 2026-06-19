@@ -1,0 +1,8 @@
+---
+- name: Validate and reload nginx
+  ansible.builtin.command:
+    argv:
+      - /bin/sh
+      - -c
+      - nginx -t && systemctl reload nginx
+  changed_when: true

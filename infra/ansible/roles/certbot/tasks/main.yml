@@ -1,0 +1,62 @@
+---
+- name: Validate certbot configuration
+  ansible.builtin.assert:
+    that:
+      - nginx_sites is defined
+      - nginx_sites | length > 0
+      - certbot_email is defined
+      - certbot_email | string | length > 0
+      - certbot_agree_tos | bool
+    fail_msg: certbot_email and certbot_agree_tos=true are required, and nginx_sites must not be empty
+
+- name: Install Certbot and nginx plugin
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure Let's Encrypt renewal deploy hook directory exists
+  ansible.builtin.file:
+    path: "{{ certbot_renewal_hook_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure nginx reload hook for renewed certificates
+  ansible.builtin.copy:
+    dest: "{{ certbot_renewal_hook_path }}"
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/bin/sh
+      set -eu
+      nginx -t
+      systemctl reload nginx
+
+- name: Request and configure Let's Encrypt certificates for nginx sites
+  ansible.builtin.command:
+    cmd: >-
+      certbot --nginx --non-interactive
+      --email {{ certbot_email | quote }}
+      {{ '--agree-tos' if certbot_agree_tos | bool else '' }}
+      {{ '--redirect' if certbot_redirect_http_to_https | bool else '--no-redirect' }}
+      -d {{ item.server_name | quote }}
+    creates: "/etc/letsencrypt/live/{{ item.server_name }}/fullchain.pem"
+  loop: "{{ nginx_sites }}"
+  loop_control:
+    label: "{{ item.server_name }}"
+  notify: Reload nginx
+
+- name: Ensure certbot timer is enabled and started
+  ansible.builtin.service:
+    name: certbot.timer
+    enabled: true
+    state: started
+
+- name: Flush certbot handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,5 @@
+---
+certbot_email: ""
+certbot_agree_tos: false
+certbot_redirect_http_to_https: true
+certbot_renewal_hook_path: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
