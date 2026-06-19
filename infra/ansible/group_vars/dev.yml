@@ -9,13 +9,15 @@ gitlab_runner_default_image: docker:27-cli
 
 gitlab_runner_token: "{{ lookup('env', 'GITLAB_RUNNER_TOKEN') }}"
 
+base_domain: example.com
+
 nginx_sites:
   - name: catalog-api
-    server_name: catalog-api.example.com
+    server_name: "catalog-api.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 8082
   - name: catalog-grafana
-    server_name: catalog-grafana.example.com
+    server_name: "catalog-grafana.{{ base_domain }}"
     upstream_host: 127.0.0.1
     upstream_port: 3000
 
