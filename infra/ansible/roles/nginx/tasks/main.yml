@@ -1,14 +1,30 @@
 ---
-- name: Validate nginx site definitions
+- name: Validate nginx_sites is provided by environment inventory
   ansible.builtin.assert:
     that:
       - nginx_sites is defined
       - nginx_sites | type_debug == 'list'
+      - nginx_sites | length > 0
+    fail_msg: >-
+      nginx_sites must be defined as a non-empty list in environment variables
+      such as group_vars/dev.yml. Do not define nginx_sites in role defaults.
+    success_msg: "Using {{ nginx_sites | length }} nginx site definition(s) from inventory variables."
+
+- name: Show effective nginx site names
+  ansible.builtin.debug:
+    msg: "Effective nginx_sites entries: {{ nginx_sites | map(attribute='name') | list }}"
+
+- name: Validate nginx site definitions
+  ansible.builtin.assert:
+    that:
       - item.name is defined
+      - item.name | string | length > 0
       - item.server_name is defined
+      - item.server_name | string | length > 0
       - item.upstream_host is defined
+      - item.upstream_host | string | length > 0
       - item.upstream_port is defined
-    fail_msg: Each nginx_sites entry must define name, server_name, upstream_host, and upstream_port
+    fail_msg: Each nginx_sites entry must define non-empty name, server_name, upstream_host, and upstream_port
   loop: "{{ nginx_sites }}"
   loop_control:
     label: "{{ item.name | default('unnamed') }}"
